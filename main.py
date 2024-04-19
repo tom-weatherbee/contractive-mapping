@@ -72,7 +72,7 @@ class Main:
 
     def run(self) -> None:
         fromDim = 4
-        toDim = 3
+        toDim = 4
         originalHC = self.emptyHypercube(fromDim)
         newHC = self.emptyHypercube(toDim)
         self.mapping({originalHC.vertices['0'*fromDim]: newHC.vertices['0'*toDim]}, toDim)
@@ -101,10 +101,10 @@ class Main:
     def mapping(self, fixedPoints: Dict[Vertex, Vertex], toDim: int):
         order = list(itertools.chain.from_iterable(self.bfsVertex(list(fixedPoints.keys())[0])))
         with open(f'C:/Users/thedi/Desktop/out.txt', 'w') as writer:
-            self.mappingHelper({}, order, {f: t.neighbors for f, t in fixedPoints.items()}, writer, toDim)
+            self.mappingHelper({}, order, {f: t.neighbors for f, t in fixedPoints.items()}, writer, 0b0, bin(2**toDim-1))
     
     # fix two orthogonal axes in layer 1 of new cube
-    def mappingHelper(self, mapping: Dict[Vertex, Vertex], order: List[Vertex], frontier: Dict[Vertex, Set[Vertex]], writer: TextIOWrapper, remainingDFToFix, firstPoint: bool = True) -> None:
+    def mappingHelper(self, mapping: Dict[Vertex, Vertex], order: List[Vertex], frontier: Dict[Vertex, Set[Vertex]], writer: TextIOWrapper, fixedDF: bin, targetFixedDF: bin, firstPoint: bool = True) -> None:
         if len(order) == 0:
             keys = list(mapping.keys())
             keys.sort(key=str)
@@ -116,8 +116,8 @@ class Main:
                 self.success += 1
                 if (self.success) % 10000 == 0:
                     print(self.success, self.duplicates, self.failure)
-                writer.write(str(mapping))
-                writer.write('\n')
+                # writer.write(str(mapping))
+                # writer.write('\n')
             return
         
         newOrder = order.copy()
@@ -125,10 +125,11 @@ class Main:
         adjacencyList = frontier[v]
 
         candidates = functools.reduce(lambda accCandidates, adjacency: accCandidates.intersection(adjacency.neighbors.union({adjacency})), adjacencyList, list(adjacencyList)[0].neighbors.union({list(adjacencyList)[0]}))
-        populatedVertices = set()
-        if remainingDFToFix > 0 and not firstPoint:
-            populatedVertices = set(mapping.values())
-            candidates = candidates.intersection(populatedVertices).union({list(candidates.difference(populatedVertices))[0]} if len(candidates.difference(populatedVertices)) > 0 else set())
+        if fixedDF != targetFixedDF and not firstPoint:
+            noDFChangeCandidates = {candidate for candidate in candidates if int(candidate.label,2) | fixedDF == fixedDF}
+            newcandidates = noDFChangeCandidates.union({list(candidates.difference(noDFChangeCandidates))[0]} if len(candidates) > len(noDFChangeCandidates) else set())
+            #print(candidates,noDFChangeCandidates,newcandidates,str(bin(fixedDF)), targetFixedDF)
+            candidates = newcandidates
         
         if len(candidates) == 0:
             self.failure += 1
@@ -144,7 +145,7 @@ class Main:
 
             newMapping = mapping.copy()
             newMapping[v] = candidate
-            self.mappingHelper(newMapping, newOrder, newFrontier, writer, remainingDFToFix - (0 if candidate in populatedVertices else 1), False)
+            self.mappingHelper(newMapping, newOrder, newFrontier, writer, int(candidate.label,2) | fixedDF, targetFixedDF, False)
 
 
     # Hypercube made of vertices without mappings
