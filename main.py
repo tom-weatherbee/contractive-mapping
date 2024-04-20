@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 from typing import List, Set, Dict
 from io import TextIOWrapper
 import functools
@@ -83,7 +84,6 @@ class Main:
         newHC = self.emptyHypercube(self.toDim)
         self.mapping(
             {originalHC.vertices["0" * self.fromDim]: newHC.vertices["0" * self.toDim]},
-            self.toDim,
         )
         # print(fromDim, '->', toDim, '| Successes:', self.success, ' Duplicates:', self.duplicates, ' Failures:', self.failure)
 
@@ -212,7 +212,7 @@ class Main:
         order = list(
             itertools.chain.from_iterable(self.bfsVertex(list(fixedPoints.keys())[0]))
         )
-        with open(f"C:/Users/thedi/Desktop/out.txt", "w") as writer:
+        with open(f"{os.path.dirname(__file__)}\out.txt", "w") as writer:
             self.mappingHelper(
                 {},
                 order,
