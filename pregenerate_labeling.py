@@ -3,7 +3,6 @@ import time
 import numpy as np
 
 globalFound = 0
-globalEliminated = 0
 
 
 def getAllNumsStratified(numDigits):
@@ -67,46 +66,32 @@ def subsequentLabels(currentLabels, remainingCandidates, permMats, cap=None):
         list(filter(lambda cand: sum(cand[1]) == n, enumerate(remainingCandidates)))
         for n in range(sum(currentLabels[-1]), sum(remainingCandidates[-1]) + 1)
     ]
-    validPerms = permMats.copy()
 
-    stratefiedCurrentLabels = [
-        list(filter(lambda cand: sum(cand) == n, currentLabels))
-        for n in range(sum(currentLabels[-1]) + 1)
-    ]
+    bottomStratumLabels = list(
+        filter(lambda label: sum(label) == sum(currentLabels[-1]), currentLabels)
+    )
+    bottomStratumMatrix = np.matrix(bottomStratumLabels)
+    bottomStratumHash = "".join(map(str, bottomStratumMatrix.flat))
 
-    for strata in stratefiedCurrentLabels:
-        if len(strata) == 0:
-            continue
-        strataMatrix = np.matrix(strata)
-        strataHash = "".join(map(str, strataMatrix.flat))
-        validPerms = list(
-            filter(
-                lambda perm: getPermutationHash(perm, strataMatrix) == strataHash,
-                validPerms,
-            )
+    validPermsBottomStratum = list(
+        filter(
+            lambda perm: getPermutationHash(perm, bottomStratumMatrix)
+            == bottomStratumHash,
+            permMats,
         )
-
-    # currLabelMatrix = np.matrix(currentLabels)
-    # currLabelHash = "".join(map(str, currLabelMatrix.flat))
-
-    # validPerms = list(
-    #     filter(
-    #         lambda perm: getPermutationHash(perm, currLabelMatrix) == currLabelHash,
-    #         permMats,
-    #     )
-    # )
+    )
 
     indepCands = []
-    for strata in stratefiedCandidates:
-        cands = strata.copy()
+    for stratum in stratefiedCandidates:
+        cands = stratum.copy()
         seen = set()
         for candAndIdx in cands:
             idx, cand = candAndIdx
             if "".join(map(str, cand)) in seen:
                 continue
-            # mat = np.vstack([currLabelMatrix, np.matrix(cand)])
             results = map(
-                lambda perm: getPermutationHash(perm, np.matrix(cand)), validPerms
+                lambda perm: getPermutationHash(perm, np.matrix(cand)),
+                validPermsBottomStratum,
             )
             seen.update(results)
             indepCands.append((cand, idx))
@@ -118,7 +103,14 @@ def subsequentLabels(currentLabels, remainingCandidates, permMats, cap=None):
 
     for cand, idx in indepCands:
         allLabelSequences += subsequentLabels(
-            currentLabels + [cand], remainingCandidates[idx + 1 :], permMats, cap
+            currentLabels + [cand],
+            remainingCandidates[idx + 1 :],
+            (
+                permMats
+                if sum(cand) == sum(currentLabels[-1])
+                else validPermsBottomStratum
+            ),
+            cap,
         )
     return allLabelSequences
 
