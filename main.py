@@ -78,7 +78,7 @@ class Main:
         self.firstOrder = []
 
     def run(self) -> None:
-        self.fromDim = 4
+        self.fromDim = 3
         self.toDim = 4
         originalHC = self.emptyHypercube(self.fromDim)
         newHC = self.emptyHypercube(self.toDim)
@@ -116,18 +116,27 @@ class Main:
                 allVertices.append(list(neighbors))
         return allVertices
 
+    # based on the idea that transforming the HC before constructing the mapping leads to duplicate inequalities
+    def constructInequalities2(self, mapping) -> List[str]:
+        self.generateLabels(None, None)
+
+    def generateLabels(self, assigned, dfs):
+        numLayers = self.fromDim
+        for layer in range(assigned[-1][1] if len(assigned) > 0 else 1, numLayers + 1):
+            pass
+
     # generates every possible spacing of labels in terms of their offset from the previous label
     # (eg. [1,2,1] indicates 'a' on row 1, 'b' on row 3, 'c' on row 4)
     # again *very* brute force
     def offsetsList(self, mapping) -> List[int]:
         out = []
-        for numLabels in range(2, len(mapping) + 1):
-            offsets = [0] + [1 for x in range(numLabels - 1)]
+        for numLabels in range(2, len(mapping)):
+            offsets = [1] + [1 for x in range(numLabels - 1)]
 
             def iterateOffsets() -> bool:
                 offsets[-1] += 1
                 numOverflows = 0
-                while sum(offsets) == len(mapping):
+                while sum(offsets) >= len(mapping):
                     numOverflows += 1
                     if numOverflows == numLabels:
                         return False
@@ -240,6 +249,8 @@ class Main:
             if str(sortedMapping) in self.found.keys():
                 self.duplicates += 1
             else:
+                if int(str(mapping[keys[0]])) != 0:
+                    return
                 # self.verifyMapping(mapping)
                 self.success += 1
                 if (self.success) % 10000 == 0:
@@ -259,7 +270,7 @@ class Main:
                         writer.write(inequality)
                         writer.write("\n")
                     writer.write("\n")
-                    print("OK")
+                    # print("OK")
             return
 
         newOrder = order.copy()
